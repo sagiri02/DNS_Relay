@@ -3,7 +3,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class Log {
-    private final String path = "log.txt";
+    private final String path = "../output/log.txt";
     private final File log;
     private String buf = "";
 
