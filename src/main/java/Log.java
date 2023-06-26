@@ -3,10 +3,13 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class Log {
+    //存储log的路径
     private final String path = "../output/log.txt";
+    //log 文件
     private final File log;
-    private String buf = "";
-
+    //创建buffer，默认为空
+    private String buffer = "";
+    //构造器
     public Log() {
         log = new File(path);
         if (!log.exists()) {
@@ -17,23 +20,25 @@ public class Log {
             }
         }
     }
-
+    //创建log缓存，链接字符串
     public void addLog(String logPiece) {
         System.out.println(logPiece);
-        buf = buf.concat("\t").concat(logPiece).concat("\n");
+        //补全字符串
+        buffer = buffer.concat("\t").concat(logPiece).concat("\n");
     }
 
+    //IO写入本地文件log.txt
     synchronized public void writeLog() {
         Date date = new Date();
         SimpleDateFormat formatter = new SimpleDateFormat("yy/MM/dd HH:mm:ss");
-        String logItem = "[" + formatter.format(date) + "]\n" + buf + "\n";
+        String item = "[" + formatter.format(date) + "]\n" + buffer + "\n";
         try {
-            BufferedWriter bw = new BufferedWriter(new FileWriter(log, true));
-            bw.write(logItem);
-            bw.close();
+            BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(log, true));
+            bufferedWriter.write(item);
+            bufferedWriter.close();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        buf = "";
+        buffer = "";
     }
 }
