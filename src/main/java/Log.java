@@ -29,9 +29,9 @@ public class Log {
 
     //IO写入本地文件log.txt
     synchronized public void writeLog() {
-        Date date = new Date();
-        SimpleDateFormat formatter = new SimpleDateFormat("yy/MM/dd HH:mm:ss");
-        String item = "[" + formatter.format(date) + "]\n" + buffer + "\n";
+        Date time = new Date();
+        SimpleDateFormat form = new SimpleDateFormat("yy/MM/dd HH:mm:ss");
+        String item = "****->[" + form.format(time) + "]<-****\n" + buffer + "\n";
         try {
             BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(log, true));
             bufferedWriter.write(item);
