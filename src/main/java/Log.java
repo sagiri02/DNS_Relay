@@ -4,7 +4,7 @@ import java.util.Date;
 
 public class Log {
     //存储log的路径
-    private final String path = "../output/log.txt";
+    private final String path = "log.txt";
     //log 文件
     private final File log;
     //创建buffer，默认为空

@@ -8,7 +8,7 @@ import java.util.*;
 public class DNSCache {
 
     private final File cache_File;
-    private final String File_Path = "./output/cache.txt";
+    private final String File_Path = "cache.txt";
     private final Map<String, Set<InetAddress>> cache;
     private final Object cache_Lock = new Object();
 
