@@ -41,23 +41,23 @@ public class Handler implements Runnable{
 
         int type = question.getType();
         switch (type) {
+            // IPv4 question
+            case 1 -> {
+                log.addLog("****->using thread: [" + Thread.currentThread().getName() + "]<-**** " + "question for: " + domain + "(ipv4)");
+            }
             // inverse dns
             case 12 -> {
                 nop = true;
-                log.addLog("****->using thread: [" + Thread.currentThread().getName() + "]<-**** " + "using inverse dns");
-            }
-            // IPv4 question
-            case 1 -> {
-                log.addLog("****->using thread: [" + Thread.currentThread().getName() + "]<-**** " + "using IPv4 question for domain: " + domain);
+                log.addLog("****->using thread: [" + Thread.currentThread().getName() + "]<-**** " + "using inverse DNS");
             }
             // IPv6 question
             case 28 -> {
                 useV6 = true;
-                log.addLog("****->using thread: [" + Thread.currentThread().getName() + "]<-**** " + "using IPv6 question for domain: " + domain);
+                log.addLog("****->using thread: [" + Thread.currentThread().getName() + "]<-**** " + "question for domain: " + domain + "(ipv6)");
             }
             default -> {
                 nop = true;
-                log.addLog("****->using thread: [" + Thread.currentThread().getName() + "]<-**** " + "other type protocol");
+                log.addLog("****->using thread: [" + Thread.currentThread().getName() + "]<-**** " + "other protocol(not defined as an IP)");
             }
         }
         InetAddress answerIP= null;
@@ -158,7 +158,7 @@ public class Handler implements Runnable{
                     || answerIP.toString().substring(1).equals("::")
                     || answerIP.toString().substring(1).equals("0:0:0:0:0:0:0:0")) {
                 messageTransmitted.getHeader().setRcode(3);
-                log.addLog("****->[" + Thread.currentThread().getName() + "]<-****" + "answer: non-existent domain");
+                log.addLog("****->[" + Thread.currentThread().getName() + "]<-****" + "answer: doesn't exist domain");
             } else {
                 Record answer;
                 // IPv4 answer

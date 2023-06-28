@@ -46,7 +46,7 @@ public class DNSRelay {
                 Executors.newScheduledThreadPool(1);
         executorService.scheduleAtFixedRate(() -> {
             cache.flushCacheFile(cacheDays);
-            log.addLog("DNS cache is flushed");
+            log.addLog("DNS cache flushed");
             log.writeLog();
         }, 0, 1, TimeUnit.DAYS);
 
@@ -56,7 +56,7 @@ public class DNSRelay {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-        log.addLog("server started");
+        log.addLog("DNS server started");
         while (true) {
             try {
                 socket.receive(request);
