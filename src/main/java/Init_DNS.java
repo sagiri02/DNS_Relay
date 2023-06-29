@@ -17,7 +17,7 @@ public class Init_DNS {
     public DatagramSocket init(){
         // init log
         Log log = new Log();
-        log.addLog("initializing DNS_Relay");
+        log.addLog("Starting ———————————>>>>>>>> DNS_Relay");
 
         // load config
         Properties config = new Properties();
@@ -38,10 +38,10 @@ public class Init_DNS {
         //add the configuration to the log file
         byte[] buffer = new byte[1024];
         DatagramPacket request = new DatagramPacket(buffer, buffer.length);
-        log.addLog("\tuseCache: " + useCache);
-        log.addLog("\tcacheDay: " + cacheDays);
-        log.addLog("\tpoolSize: " + poolSize);
-        log.addLog("\tDNSServer: " + remoteDNSServer);
+        log.addLog("\tif the cache used: " + useCache);
+        log.addLog("\tthe days cache available: " + cacheDays);
+        log.addLog("\tthe size of pool size: " + poolSize);
+        log.addLog("\twe choose the remote DNS server: " + remoteDNSServer +" (aliyun)");
         log.writeLog();
 
         //create socket
@@ -51,7 +51,7 @@ public class Init_DNS {
         } catch (SocketException e) {
             throw new RuntimeException(e);
         }
-        log.addLog("socket connected successfully");
+        log.addLog("socket connected");
         return socket;
     }
 }
