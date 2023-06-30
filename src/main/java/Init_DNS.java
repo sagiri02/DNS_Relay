@@ -10,6 +10,7 @@ public class Init_DNS {
     static boolean useCache = true;
     static int cacheDays = 3;
     static int poolSize = 10;
+    static boolean useSimpleLog = true;
 
     //aliyun DNS sever
     static String remoteDNSServer = "223.5.5.5";
@@ -17,7 +18,7 @@ public class Init_DNS {
     public DatagramSocket init(){
         // init log
         Log log = new Log();
-        log.addLog("Starting ———————————>>>>>>>> DNS_Relay");
+        log.addLog("initializing DNS_Relay");
 
         // load config
         Properties config = new Properties();
@@ -29,6 +30,7 @@ public class Init_DNS {
             cacheDays = Integer.parseInt(config.getProperty("cacheDays", "3"));
             poolSize = Integer.parseInt(config.getProperty("poolSize", "20"));
             remoteDNSServer = config.getProperty("DNSServer", "223.5.5.5");
+            useSimpleLog = Boolean.parseBoolean(config.getProperty("useSimpleLog","true"));
             log.addLog("finish initial configuration");
         } catch (IOException ignored) {
             log.addLog("failed to read file, use default settings");
@@ -38,10 +40,10 @@ public class Init_DNS {
         //add the configuration to the log file
         byte[] buffer = new byte[1024];
         DatagramPacket request = new DatagramPacket(buffer, buffer.length);
-        log.addLog("\tif the cache used: " + useCache);
-        log.addLog("\tthe days cache available: " + cacheDays);
-        log.addLog("\tthe size of pool size: " + poolSize);
-        log.addLog("\twe choose the remote DNS server: " + remoteDNSServer +" (aliyun)");
+        log.addLog("\tuseCache: " + useCache);
+        log.addLog("\tcacheDay: " + cacheDays);
+        log.addLog("\tpoolSize: " + poolSize);
+        log.addLog("\tDNSServer: " + remoteDNSServer);
         log.writeLog();
 
         //create socket
@@ -51,7 +53,8 @@ public class Init_DNS {
         } catch (SocketException e) {
             throw new RuntimeException(e);
         }
-        log.addLog("socket connected");
+        log.addLog("socket connected successfully");
+
         return socket;
     }
 }

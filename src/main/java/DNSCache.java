@@ -24,7 +24,20 @@ public class DNSCache {
         }
     }
 
-    public InetAddress getIPFromCache(String domain) {
+    public ArrayList<InetAddress> getIPFromCache(String domain) {
+        synchronized (cache_Lock) {
+            if (cache.containsKey(domain)) {
+                ArrayList<InetAddress> res = new ArrayList<>();
+                Set<InetAddress> ipArray = cache.get(domain);
+                res.addAll(ipArray);
+                int index = new Random().nextInt(ipArray.size());
+
+                return res;
+            }
+        }
+        return null;
+    }
+    public InetAddress getIPFromCache1(String domain) {
         synchronized (cache_Lock) {
             if (cache.containsKey(domain)) {
                 Set<InetAddress> ipArray = cache.get(domain);

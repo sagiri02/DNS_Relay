@@ -6,6 +6,7 @@ import java.net.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 public class Handler implements Runnable{
     DatagramPacket request;
@@ -14,6 +15,9 @@ public class Handler implements Runnable{
     Log log;
     String remoteDNSServer;
     boolean useCache;
+    boolean useSimpleLog = Init_DNS.useSimpleLog;
+    ArrayList<InetAddress> IPs;
+
 
     public Handler(DatagramPacket request, DatagramSocket socket,
                    DNSCache cache, Log log, String remoteDNSServer, boolean useCache) {
@@ -37,35 +41,44 @@ public class Handler implements Runnable{
         }
         Record question = messageReceived.getQuestion();
         String domain = question.getName().toString();
-        boolean valid = true, useV6 = false, nop = false;
+        boolean valid = true, useV6 = false, nop = false,inCache = false;
 
         int type = question.getType();
         switch (type) {
-            // IPv4 question
-            case 1 -> {
-                log.addLog("****->using thread: [" + Thread.currentThread().getName() + "]<-**** " + "question for: " + domain + "(ipv4)");
-            }
             // inverse dns
             case 12 -> {
                 nop = true;
-                log.addLog("****->using thread: [" + Thread.currentThread().getName() + "]<-**** " + "using inverse DNS");
+                log.addLog("****->using thread: [" + Thread.currentThread().getName() + "]<-**** " + "using inverse dns");
+            }
+            // IPv4 question
+            case 1 -> {
+                log.addLog("****->using thread: [" + Thread.currentThread().getName() + "]<-**** " + "using IPv4 question for domain: " + domain);
             }
             // IPv6 question
             case 28 -> {
                 useV6 = true;
-                log.addLog("****->using thread: [" + Thread.currentThread().getName() + "]<-**** " + "question for domain: " + domain + "(ipv6)");
+                log.addLog("****->using thread: [" + Thread.currentThread().getName() + "]<-**** " + "using IPv6 question for domain: " + domain);
             }
             default -> {
                 nop = true;
-                log.addLog("****->using thread: [" + Thread.currentThread().getName() + "]<-**** " + "other protocol(not defined as an IP)");
+                log.addLog("****->using thread: [" + Thread.currentThread().getName() + "]<-**** " + "other type protocol");
             }
         }
         InetAddress answerIP= null;
         DatagramPacket response = null;
+        ArrayList<InetAddress> cacheIPs = null;
+        if (useCache){
 
-        if (useCache)
-            answerIP = cache.getIPFromCache(domain + (useV6 ? ":IPv6" : ""));
-        if (!nop && (answerIP != null)) {
+            cacheIPs = cache.getIPFromCache(domain + (useV6 ? ":IPv6" : ""));
+            if(cacheIPs != null){
+                answerIP = cacheIPs.get(0);
+            }else{
+                answerIP = cache.getIPFromCache1(domain + (useV6 ? ":IPv6" : ""));
+            }
+
+        }
+        if (!nop && (cacheIPs!=null)) {
+            inCache = true;
             log.addLog("****->using thread: [" + Thread.currentThread().getName() + "]<-**** " + "extracted in cache");
         } else {
             if (!nop && useCache)
@@ -104,7 +117,7 @@ public class Handler implements Runnable{
                     throw new RuntimeException(e);
                 }
                 List<Record> records = messageResponse.getSection(Section.ANSWER);
-                ArrayList<InetAddress> IPs = new ArrayList<>();
+                 IPs = new ArrayList<>();
                 for (Record record : records) {
                     if (!useV6 && record instanceof ARecord) {
                         // IPv4 records
@@ -139,7 +152,7 @@ public class Handler implements Runnable{
                             @Override
                             public void run() {
                                 synchronized (cache.getCacheLock()) {
-                                    if (cache.getIPFromCache(domain + (finalUseV6 ? ":IPv6" : "")) == null) {
+                                    if (cache.getIPFromCache1(domain + (finalUseV6 ? ":IPv6" : "")) == null) {
                                         cache.addCacheToFile(domain + (finalUseV6 ? ":IPv6" : ""), IPs);
                                         log.addLog("****->[" + parentName + "-child]<-****" + "added & reloaded cache");
                                     }
@@ -152,29 +165,58 @@ public class Handler implements Runnable{
                 }
             }
         }
+        byte[] buffer = {1};
         if (!nop) {
             Message messageTransmitted = messageReceived.clone();
             if (!valid || answerIP.toString().substring(1).equals("0.0.0.0")
                     || answerIP.toString().substring(1).equals("::")
                     || answerIP.toString().substring(1).equals("0:0:0:0:0:0:0:0")) {
                 messageTransmitted.getHeader().setRcode(3);
-                log.addLog("****->[" + Thread.currentThread().getName() + "]<-****" + "answer: doesn't exist domain");
+                buffer = messageTransmitted.toWire();
+                log.addLog("****->[" + Thread.currentThread().getName() + "]<-****" + "answer: non-existent domain");
             } else {
+
                 Record answer;
-                // IPv4 answer
-                if (!useV6)
-                    answer = new ARecord(question.getName(), question.getDClass(), 64, answerIP);
-                    // IPv6 answer
-                else
-                    answer = new AAAARecord(question.getName(), question.getDClass(), 64, answerIP);
-                messageTransmitted.addRecord(answer, Section.ANSWER);
-                log.addLog("****->using thread: [" + Thread.currentThread().getName() + "]<-****" + "answer IP: " + answerIP.toString().substring(1));
+                if (inCache) {
+
+                    for (int i = 0; i < cacheIPs.size(); i++) {
+                        // IPv4 answer
+                        if (!useV6)
+                            answer = new ARecord(question.getName(), question.getDClass(), 64, cacheIPs.get(i));
+                            // IPv6 answer
+                        else
+                            answer = new AAAARecord(question.getName(), question.getDClass(), 64, cacheIPs.get(i));
+                        messageTransmitted.addRecord(answer, Section.ANSWER);
+                        buffer = messageTransmitted.toWire();
+                        log.addLog("****->using thread: [" + Thread.currentThread().getName() + "]<-****" + "answer IP: " + cacheIPs.get(i).toString().substring(1));
+                    }
+                } else {
+                    for (int i = 0; i < IPs.size(); i++) {
+                        // IPv4 answer
+                        if (!useV6)
+                            answer = new ARecord(question.getName(), question.getDClass(), 64, IPs.get(i));
+                            // IPv6 answer
+                        else
+                            answer = new AAAARecord(question.getName(), question.getDClass(), 64, IPs.get(i));
+                        messageTransmitted.addRecord(answer, Section.ANSWER);
+
+                        log.addLog("****->using thread: [" + Thread.currentThread().getName() + "]<-****" + "answer IP: " + IPs.get(i).toString().substring(1));
+                    }
+
+                    buffer = messageTransmitted.toWire();
+                }
+
             }
-            byte[] buffer = messageTransmitted.toWire();
-            response = new DatagramPacket(buffer, buffer.length);
+
         }
+        response = new DatagramPacket(buffer, buffer.length);
         response.setAddress(sourceIP);
         response.setPort(sourcePort);
+        if(!useSimpleLog){
+            log.addLog("-----------------------------------this is complex Log---------------------------------------");
+            log.addLog("****->using thread: [" + Thread.currentThread().getName() + "]<-**** the length of the response data: " +response.getLength());
+            log.addLog("****->using thread: [" + Thread.currentThread().getName() + "]<-**** the socket address: " +response.getSocketAddress());
+        }
         try {
             socket.send(response);
         } catch (IOException e) {
